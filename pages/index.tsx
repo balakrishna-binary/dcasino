@@ -1,6 +1,8 @@
 import Head from "next/head";
+import SpinWheel from "./../components/spin-wheel/spin-wheel";
 
 export default function Home() {
+  const spin_wheel_numbers = [0,1,2,3,4,5,6,7,8,9];
   return (
     <div className="container">
       <style jsx>{`
@@ -46,13 +48,32 @@ export default function Home() {
         * {
           box-sizing: border-box;
         }
+
+        :root {
+          --wheel-font: "Lato", "Quicksand", sans-serif;
+          --wheel-size: 30vw;
+          --wheel-slice-spacing: 2vw;
+          --wheel-border-size: 2px;
+          --wheel-color: #a3e7a9;
+          --neutral-color: white;
+          --PI: 3.14159265358979;
+          --nb-item: 0;
+          --item-nb: 0;
+          --selected-item: 0;
+          --nb-turn: 5;
+          --spinning-duration: 4s;
+          --reset-duration: 0s;
+          --wheel-item-color: white;
+        }
       `}</style>
       <Head>
         <title>Create Next App</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main>
-        <div className="spin-wheel">{/* TODO: add spinwheel */}</div>
+        <div className="spin-wheel">
+          <SpinWheel items={spin_wheel_numbers} />
+        </div>
         <div className="sidebar">
           {/* TODO: add API Token input */}
           <div className="trade-params">
