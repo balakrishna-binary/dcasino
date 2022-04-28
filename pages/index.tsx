@@ -29,6 +29,8 @@ function randomIntFromInterval(min: number, max: number) {
 
 export default function Home() {
     const [response, setResponse] = React.useState({});
+    const [stake, setStake] = React.useState(0);
+    const [balance, setBalance] = React.useState(0);
     const [selected_emoji, setSelectedEmoji] = React.useState(null);
     const [should_spin, setSpin] = React.useState(false);
     const [last_digit, setLastDigit] = React.useState<number>(0);
@@ -43,6 +45,16 @@ export default function Home() {
             if (data.error !== undefined) {
                 console.log(data.error.message);
                 // api_socket.close();
+            } else if (data.msg_type == "authorize") {
+                setBalance(data.authorize.balance);
+            } else if (data.msg_type == "proposal") {
+                api_socket.send(
+                    JSON.stringify({
+                        buy: 1,
+                        id: data.proposal.id,
+                        subscribe: 1,
+                    })
+                );
             } else {
                 console.log(data);
             }
@@ -50,6 +62,22 @@ export default function Home() {
 
         return () => api_socket.close();
     }, []);
+
+    const openContract = (prediction: string, stake: number) => {
+        api_socket.send(
+            JSON.stringify({
+                proposal: 1,
+                amount: stake,
+                barrier: prediction,
+                basis: "payout",
+                contract_type: "DIGITMATCH",
+                currency: "USD",
+                duration: 5,
+                duration_unit: "t",
+                symbol: "R_100",
+            })
+        );
+    };
 
     const mockPurchaseAPI = async (): Promise<{ last_digit: number; result: "won" | "lost" }> => {
         return new Promise((resolve) => {
@@ -167,7 +195,7 @@ export default function Home() {
                 }
             `}</style>
             <Head>
-                <title>Create Next App</title>
+                <title>Spin Wheel</title>
                 <link rel="icon" href="/favicon.ico" />
             </Head>
             <main>
@@ -179,7 +207,12 @@ export default function Home() {
                     />
                 </div>
                 <div className="selector">
-                    <input className="api-token" placeholder="API Token"></input>
+                    <input
+                        className="api-token"
+                        placeholder="Stake"
+                        type="number"
+                        onChange={setStake}
+                    ></input>
                     <div className="trade-params">
                         <EmojitPrediction
                             selected_emoji={selected_emoji}
