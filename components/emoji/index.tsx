@@ -2,7 +2,7 @@ const Emoji = (props) => (
     <>
         <style jsx>{`
             .emoji {
-                font-size: 40px;
+                font-size: ${props.size};
                 margin: 10px;
             }
         `}</style>
