@@ -28,15 +28,16 @@ function randomIntFromInterval(min: number, max: number) {
 }
 
 export default function Home() {
-    const [response, setResponse] = React.useState({});
+    // const [response, setResponse] = React.useState({});
     const [stake, setStake] = React.useState(0);
     const [balance, setBalance] = React.useState(0);
-    const [selected_emoji, setSelectedEmoji] = React.useState(null);
+    const [status, setStatus] = React.useState("pending");
+    const [selected_emoji_index, setSelectedEmojiIndex] = React.useState(null);
     const [should_spin, setSpin] = React.useState(false);
     const [last_digit, setLastDigit] = React.useState<number>(0);
 
     React.useEffect(() => {
-        api_socket.onopen = (e) => {
+        api_socket.onopen = () => {
             api_socket.send(JSON.stringify({ authorize: token }));
         };
 
@@ -44,16 +45,26 @@ export default function Home() {
             var data = JSON.parse(msg.data);
             if (data.error !== undefined) {
                 console.log(data.error.message);
-                // api_socket.close();
             } else if (data.msg_type == "authorize") {
+                console.log(data);
                 setBalance(data.authorize.balance);
             } else if (data.msg_type == "proposal") {
+                console.log(data);
                 api_socket.send(
                     JSON.stringify({
-                        buy: 1,
-                        id: data.proposal.id,
+                        buy: data.proposal.id,
                         subscribe: 1,
+                        price: stake,
                     })
+                );
+            } else if (
+                data.msg_type == "proposal_open_contract" &&
+                data.proposal_open_contract.status != "open"
+            ) {
+                console.log(data);
+                setStatus(data.proposal_open_contract.status);
+                setLastDigit(
+                    Number(data.proposal_open_contract.sell_spot_display_value.substr(-1))
                 );
             } else {
                 console.log(data);
@@ -72,43 +83,33 @@ export default function Home() {
                 basis: "payout",
                 contract_type: "DIGITMATCH",
                 currency: "USD",
-                duration: 5,
+                duration: 3,
                 duration_unit: "t",
-                symbol: "R_100",
+                symbol: "R_10",
             })
         );
     };
 
-    const mockPurchaseAPI = async (): Promise<{ last_digit: number; result: "won" | "lost" }> => {
+    const purchaseAPI = async (): Promise<{ last_digit: number; result: "won" | "lost" }> => {
         return new Promise((resolve) => {
+            openContract(selected_emoji_index.toString(), stake);
             setTimeout(() => {
-                const last_digit = randomIntFromInterval(0, 9);
                 resolve({
-                    last_digit,
-                    result: selected_emoji === "0x1F30F" ? "won" : "lost",
+                    last_digit: last_digit,
+                    result: status === "won" ? status : "lost",
                 });
-            }, 2000);
+            }, 6000);
         });
     };
 
     const purchase = async () => {
         setSpin(true);
-        const response = await mockPurchaseAPI();
+        const response = await purchaseAPI();
+        if (status === "pending") setLastDigit(Math.floor(Math.random() * 10));
+        if (response.result === "won") alert("You won!!!!");
+        else alert("You lost! :(");
+        // setStatus(response.result);
         setSpin(false);
-
-        setTimeout(() => {
-            setLastDigit(response.last_digit);
-            setSpin(true);
-            setTimeout(() => {
-                setSpin(false);
-
-                alert(
-                    `${response.result === "won" ? "Won" : "Lost"}. Last digit is ${
-                        response.last_digit
-                    }.`
-                );
-            }, 2000);
-        });
     };
 
     return (
@@ -162,6 +163,89 @@ export default function Home() {
                     padding: 10px;
                     margin: 10px 2px;
                 }
+                /* The Modal (background) */
+                .modal {
+                    display: block; /* Hidden by default */
+                    position: fixed; /* Stay in place */
+                    z-index: 1; /* Sit on top */
+                    padding-top: 100px; /* Location of the box */
+                    left: 0;
+                    top: 0;
+                    width: 100%; /* Full width */
+                    height: 100%; /* Full height */
+                    overflow: auto; /* Enable scroll if needed */
+                    background-color: rgb(0, 0, 0); /* Fallback color */
+                    background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
+                }
+
+                /* Modal Content */
+                .modal-content {
+                    position: relative;
+                    background-color: #fefefe;
+                    margin: auto;
+                    padding: 0;
+                    border: 1px solid #888;
+                    width: 80%;
+                    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+                    -webkit-animation-name: animatetop;
+                    -webkit-animation-duration: 0.4s;
+                    animation-name: animatetop;
+                    animation-duration: 0.4s;
+                }
+
+                /* Add Animation */
+                @-webkit-keyframes animatetop {
+                    from {
+                        top: -300px;
+                        opacity: 0;
+                    }
+                    to {
+                        top: 0;
+                        opacity: 1;
+                    }
+                }
+
+                @keyframes animatetop {
+                    from {
+                        top: -300px;
+                        opacity: 0;
+                    }
+                    to {
+                        top: 0;
+                        opacity: 1;
+                    }
+                }
+
+                /* The Close Button */
+                .close {
+                    color: white;
+                    float: right;
+                    font-size: 28px;
+                    font-weight: bold;
+                }
+
+                .close:hover,
+                .close:focus {
+                    color: #000;
+                    text-decoration: none;
+                    cursor: pointer;
+                }
+
+                .modal-header {
+                    padding: 2px 16px;
+                    background-color: #5cb85c;
+                    color: white;
+                }
+
+                .modal-body {
+                    padding: 2px 16px;
+                }
+
+                .modal-footer {
+                    padding: 2px 16px;
+                    background-color: #5cb85c;
+                    color: white;
+                }
             `}</style>
 
             <style jsx global>{`
@@ -211,12 +295,12 @@ export default function Home() {
                         className="api-token"
                         placeholder="Stake"
                         type="number"
-                        onChange={setStake}
+                        onChange={(e) => setStake(Number(e.target.value))}
                     ></input>
                     <div className="trade-params">
                         <EmojitPrediction
-                            selected_emoji={selected_emoji}
-                            onChange={setSelectedEmoji}
+                            selected_emoji={spin_wheel_emojis[selected_emoji_index]}
+                            onChange={setSelectedEmojiIndex}
                             items={spin_wheel_emojis}
                         />
                     </div>
@@ -226,6 +310,15 @@ export default function Home() {
                         </button>
                     </div>
                 </div>
+                {/* {status !== "pending" && (
+                    <div id="myModal" className="modal">
+                        <div className="modal-content">
+                            <div className="modal-body">
+                                {status === "won" ? <p>You won!</p> : <p>You lost</p>}
+                            </div>
+                        </div>
+                    </div>
+                )} */}
             </main>
         </div>
     );

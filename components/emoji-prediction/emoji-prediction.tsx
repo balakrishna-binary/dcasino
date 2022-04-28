@@ -4,11 +4,8 @@ import Emoji from "../emoji";
 type EmojiPredictionProps = {
     items: string[];
     selected_emoji?: string;
-    onChange: (selected_emoji: string) => void;
+    onChange: (selected_emoji: number) => void;
 };
-
-// const part1 = [0, 1, 2, 3, 4];
-// const part2 = [5, 6, 7, 8, 9];
 
 const EmojiPrediction = ({ items, selected_emoji, onChange }: EmojiPredictionProps) => {
     return (
@@ -31,6 +28,11 @@ const EmojiPrediction = ({ items, selected_emoji, onChange }: EmojiPredictionPro
                     margin: auto;
                     text-align: left;
                     text-transform: none;
+                    text-align: center;
+                }
+
+                .center-text {
+                    text-align: center;
                 }
 
                 .emoji-selector {
@@ -74,7 +76,7 @@ const EmojiPrediction = ({ items, selected_emoji, onChange }: EmojiPredictionPro
             `}</style>
             <fieldset className="trade-container__fieldset">
                 <div className="trade-container__fieldset-header center-text">
-                    <span className="trade-container__fieldset-info">Emoji Prediction</span>
+                    <span className="trade-container__fieldset-info">Select Emoji</span>
                 </div>
                 <div className="emoji-selector">
                     <div className="emoji-selector__row">
@@ -86,7 +88,10 @@ const EmojiPrediction = ({ items, selected_emoji, onChange }: EmojiPredictionPro
                                         ? "emoji-selector__selection--selected"
                                         : ""
                                 }`}
-                                onClick={() => onChange(value)}
+                                onClick={() => {
+                                    console.log(items.indexOf(value));
+                                    onChange(items.indexOf(value));
+                                }}
                                 data-value={value}
                             >
                                 <Emoji label="emoji" symbol={value} size="30px" />
